@@ -87,16 +87,17 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 date_range = ""
 if not st.session_state.campaign_data.empty:
-    # Filter by selected months
     filtered_data_for_title = st.session_state.campaign_data[st.session_state.campaign_data['month'].isin(selected_months)]
     if not filtered_data_for_title.empty:
-        first_month = filtered_data_for_title['month'].iloc[0].capitalize()
-        last_month = filtered_data_for_title['month'].iloc[-1].capitalize()
+        # Sort by date to get the first and last month correctly
+        filtered_data_for_title = filtered_data_for_title.sort_values(by='date')
+        first_month_name = datetime.datetime.strptime(filtered_data_for_title['month'].iloc[0], "%B").strftime("%B").capitalize()
+        last_month_name = datetime.datetime.strptime(filtered_data_for_title['month'].iloc[-1], "%B").strftime("%B").capitalize()
         year = datetime.datetime.now().year
-        if first_month == last_month:
-            date_range = f"| {first_month} {year}"
+        if first_month_name == last_month_name:
+            date_range = f"| {first_month_name} {year}"
         else:
-            date_range = f"| {first_month} - {last_month} {year}"
+            date_range = f"| {first_month_name} - {last_month_name} {year}"
 
 st.markdown(f"<h3 style='text-align: center; color: {st.session_state.primary_color};'>{st.session_state.company_name} {date_range}</h3>", unsafe_allow_html=True)
 
