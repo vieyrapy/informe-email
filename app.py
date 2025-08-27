@@ -1,8 +1,6 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
 from fpdf import FPDF
-import base64
 import io
 import datetime
 
@@ -120,13 +118,16 @@ st.subheader("Datos Detallados de Campañas")
 st.dataframe(filtered_df[['subject', 'accepted', 'skipped', 'updatedOn']])
 
 # Function to create PDF
-def create_pdf(dataframe, observations, logo_path):
+def create_pdf(dataframe, observations, logo_url):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Helvetica", size=16)
 
-    # Add Logo
-    pdf.image(logo_path, x=10, y=8, w=30)
+    try:
+        pdf.image(logo_url, x=10, y=8, w=30)
+    except:
+        pass # Skip logo if URL is not accessible
+    
     pdf.set_x(40)
     
     # Add Title and Subtitle
@@ -150,27 +151,7 @@ def create_pdf(dataframe, observations, logo_path):
     for text in kpi_text:
         pdf.cell(0, 7, text, ln=True)
     pdf.ln(5)
-
-    # Add Chart
-    pdf.set_font("Helvetica", 'B', 14)
-    pdf.cell(0, 10, "Análisis de Campañas", ln=True)
     
-    fig, ax = plt.subplots()
-    dataframe.set_index('subject')[['accepted', 'skipped']].plot(kind='bar', stacked=True, ax=ax, color=['#A58A73', '#EFEAE6'])
-    ax.set_title("Emails Aceptados vs. Saltados por Campaña", fontsize=10)
-    ax.set_xlabel("Asunto", fontsize=8)
-    ax.set_ylabel("Número de Emails", fontsize=8)
-    ax.tick_params(axis='x', rotation=45, labelsize=8)
-    ax.tick_params(axis='y', labelsize=8)
-    ax.legend(fontsize=8)
-    plt.tight_layout()
-
-    buffer = io.BytesIO()
-    fig.savefig(buffer, format="png")
-    buffer.seek(0)
-    pdf.image(buffer, x=10, y=pdf.get_y(), w=190)
-    pdf.ln(5)
-
     # Add Data Table
     pdf.set_font("Helvetica", 'B', 14)
     pdf.cell(0, 10, "Datos Detallados de Campañas", ln=True)
@@ -182,7 +163,7 @@ def create_pdf(dataframe, observations, logo_path):
     pdf.cell(50, 10, "Actualizado el", 1, 1, 'C')
 
     for index, row in dataframe.iterrows():
-        pdf.cell(60, 10, row['subject'][:30] + '...', 1, 0)
+        pdf.cell(60, 10, str(row['subject'])[:30] + '...', 1, 0)
         pdf.cell(40, 10, str(row['accepted']), 1, 0)
         pdf.cell(40, 10, str(row['skipped']), 1, 0)
         pdf.cell(50, 10, str(row['updatedOn']), 1, 1)
@@ -216,7 +197,7 @@ st.markdown("---")
 st.header("Conclusión y Recomendaciones")
 st.markdown("Las campañas de email marketing de Fisiofitness Bilbao durante julio y agosto han tenido un rendimiento excepcional en términos de entrega. Los altos porcentajes de correos electrónicos aceptados demuestran que la lista de contactos está saludable y bien mantenida, con un mínimo de direcciones inexistentes o inaccesibles.")
 st.markdown("""
-<p class="font-semibold text-[#A58A73]">Recomendaciones:</p>
+<p class="font-semibold" style="color: #A58A73;">Recomendaciones:</p>
 <ul style="list-style-type: disc; margin-left: 20px;">
     <li>Continuar con la segmentación de la audiencia para personalizar aún más el contenido.</li>
     <li>Analizar las métricas de apertura y clics para entender qué tipos de contenido generan mayor interacción.</li>
