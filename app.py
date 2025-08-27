@@ -9,18 +9,18 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# App Title and Header with Logo
-st.markdown("<h1 style='text-align: center;'>Informe Interactivo de Email Marketing</h1>", unsafe_allow_html=True)
-logo_url = "https://tugimnasioes.com/wp-content/uploads/MPG_logo-blanco-fondo-transparente-1-1.png"
-st.markdown(f"<div style='text-align: center;'><img src='{logo_url}' alt='Logo' style='height: 100px;'></div>", unsafe_allow_html=True)
-st.markdown("<h3 style='text-align: center; color: #A58A73;'>Fisiofitness Bilbao | Julio - Agosto 2025</h3>", unsafe_allow_html=True)
-
 # Data Initialization
 if 'campaign_data' not in st.session_state:
     st.session_state.campaign_data = pd.DataFrame(
         columns=['month', 'date', 'updatedOn', 'subject', 'total', 'accepted', 'skipped', 'accepted_rate']
     )
     st.session_state.observations = {}
+if 'company_name' not in st.session_state:
+    st.session_state.company_name = "Fisiofitness Bilbao"
+if 'logo_url' not in st.session_state:
+    st.session_state.logo_url = "https://tugimnasioes.com/wp-content/uploads/MPG_logo-blanco-fondo-transparente-1-1.png"
+if 'primary_color' not in st.session_state:
+    st.session_state.primary_color = "#A58A73"
 
 # Function to add new campaign data
 def add_new_campaign(subject, accepted, skipped):
@@ -42,14 +42,25 @@ def add_new_campaign(subject, accepted, skipped):
 
 # Main Dashboard
 st.sidebar.header("Opciones de Visualización")
+
+# Dynamic Company and Logo Inputs
+st.sidebar.subheader("Personalizar Informe")
+st.session_state.company_name = st.sidebar.text_input("Nombre de la empresa", value=st.session_state.company_name)
+st.session_state.logo_url = st.sidebar.text_input("URL del logo de la empresa", value=st.session_state.logo_url)
+st.session_state.primary_color = st.sidebar.color_picker("Selecciona un color principal", value=st.session_state.primary_color)
+
 # Dynamic month filter
 unique_months = sorted(st.session_state.campaign_data['month'].unique())
-month_options = ['ambos'] + unique_months
-month_filter = st.sidebar.selectbox(
-    "Selecciona el mes:",
-    month_options,
-    index=0
+selected_months = st.sidebar.multiselect(
+    "Selecciona el(los) mes(es):",
+    options=unique_months,
+    default=unique_months
 )
+if not selected_months:
+    st.warning("Selecciona al menos un mes para ver los datos.")
+    filtered_df = pd.DataFrame()
+else:
+    filtered_df = st.session_state.campaign_data[st.session_state.campaign_data['month'].isin(selected_months)]
 
 st.sidebar.header("Agregar Nueva Campaña")
 with st.sidebar.form(key='add_campaign_form'):
@@ -64,23 +75,23 @@ with st.sidebar.form(key='add_campaign_form'):
         else:
             st.error("El asunto de la campaña es obligatorio.")
 
-st.sidebar.header("Observaciones")
-current_observations_value = st.session_state.observations.get(month_filter, "")
-current_observations = st.text_area(
-    "Escribe aquí las observaciones para el reporte actual:",
-    value=current_observations_value,
-    height=200,
-    key=f"obs_textarea_{month_filter}"
-)
-if current_observations != current_observations_value:
-    st.session_state.observations[month_filter] = current_observations
+# Dynamic Header
+st.markdown(f"""
+    <div style='text-align: center;'>
+        <img src='{st.session_state.logo_url}' alt='Logo de la empresa' style='height: 100px; object-fit: contain; margin-bottom: 10px;'>
+    </div>
+    <h1 style='text-align: center;'>Informe Interactivo de Email Marketing</h1>
+""", unsafe_allow_html=True)
+date_range = ""
+if not st.session_state.campaign_data.empty:
+    first_month = st.session_state.campaign_data['month'].iloc[0].capitalize()
+    last_month = st.session_state.campaign_data['month'].iloc[-1].capitalize()
+    if first_month == last_month:
+        date_range = f"| {first_month} {datetime.datetime.now().year}"
+    else:
+        date_range = f"| {first_month} - {last_month} {datetime.datetime.now().year}"
 
-
-# Filtering data based on selection
-if month_filter == 'ambos':
-    filtered_df = st.session_state.campaign_data
-else:
-    filtered_df = st.session_state.campaign_data[st.session_state.campaign_data['month'] == month_filter]
+st.markdown(f"<h3 style='text-align: center; color: {st.session_state.primary_color};'>{st.session_state.company_name} {date_range}</h3>", unsafe_allow_html=True)
 
 # KPI section
 st.header("Resumen del Período")
@@ -106,17 +117,36 @@ else:
 
 # Detailed data table with edit/delete functionality
 st.subheader("Datos Detallados de Campañas")
-edited_df = st.data_editor(filtered_df, num_rows="dynamic", use_container_width=True)
-st.session_state.campaign_data = st.session_state.campaign_data[~st.session_state.campaign_data.index.isin(filtered_df.index)]
-st.session_state.campaign_data = pd.concat([st.session_state.campaign_data, edited_df], ignore_index=False)
-st.session_state.campaign_data.reset_index(drop=True, inplace=True)
+if not filtered_df.empty:
+    edited_df = st.data_editor(filtered_df, num_rows="dynamic", use_container_width=True)
+    st.session_state.campaign_data = st.session_state.campaign_data[~st.session_state.campaign_data.index.isin(filtered_df.index)]
+    st.session_state.campaign_data = pd.concat([st.session_state.campaign_data, edited_df], ignore_index=False)
+    st.session_state.campaign_data.reset_index(drop=True, inplace=True)
+else:
+    st.info("No hay campañas para mostrar. Utiliza la barra lateral para agregar una nueva.")
 
 st.header("Observaciones")
-st.write(current_observations)
+current_observations_value = st.session_state.observations.get(' '.join(selected_months), "")
+st.text_area(
+    "Escribe aquí las observaciones para el reporte actual:",
+    value=current_observations_value,
+    height=200,
+    key="obs_textarea",
+    on_change=lambda: st.session_state.observations.update({' '.join(selected_months): st.session_state.obs_textarea})
+)
+st.session_state.observations[' '.join(selected_months)] = st.session_state.obs_textarea
 
 st.markdown("---")
 st.header("Conclusión y Recomendaciones")
 if not filtered_df.empty:
-    st.markdown("Las campañas de email marketing de Fisiofitness Bilbao han tenido un rendimiento excepcional en términos de entrega. Los altos porcentajes de correos electrónicos aceptados demuestran que la lista de contactos está saludable y bien mantenida, con un mínimo de direcciones inexistentes o inaccesibles.")
+    st.markdown("Las campañas de email marketing de {st.session_state.company_name} han tenido un rendimiento excepcional en términos de entrega. Los altos porcentajes de correos electrónicos aceptan que la lista de contactos está saludable y bien mantenida, con un mínimo de direcciones inexistentes o inaccesibles.")
+    st.markdown(f"""
+    <p style="font-weight: 600; color: {st.session_state.primary_color};">Recomendaciones:</p>
+    <ul style="list-style-type: disc; margin-left: 20px;">
+        <li>Continuar con la segmentación de la audiencia para personalizar aún más el contenido.</li>
+        <li>Analizar las métricas de apertura y clics para entender qué tipos de contenido generan mayor interacción.</li>
+        <li>Mantener limpia lista de contactos para asegurar altas tasas de entrega a futuro.</li>
+    </ul>
+    """, unsafe_allow_html=True)
 else:
     st.markdown("Carga tus datos de campaña para ver la conclusión y las recomendaciones.")
