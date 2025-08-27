@@ -24,7 +24,6 @@ if 'primary_color' not in st.session_state:
 
 # Function to add new campaign data
 def add_new_campaign(campaign_date, subject, aceptados, omitidos):
-    # 'Enviados' is calculated by adding 'Aceptados' and 'Omitidos'
     enviados = aceptados + omitidos
     tasa_aceptacion = (aceptados / enviados) * 100 if enviados > 0 else 0
     new_campaign = {
@@ -39,21 +38,16 @@ def add_new_campaign(campaign_date, subject, aceptados, omitidos):
     st.session_state.campaign_data = pd.concat([st.session_state.campaign_data, pd.DataFrame([new_campaign])], ignore_index=True)
     if new_campaign['month'] not in st.session_state.observations:
         st.session_state.observations[new_campaign['month']] = ""
-    # Set the new month as the default selection to show the latest data
     st.session_state.selected_months = [new_campaign['month']]
 
 # Main Dashboard
 st.sidebar.header("Opciones de Visualización")
-
-# Dynamic Company and Logo Inputs
 st.sidebar.subheader("Personalizar Informe")
 st.session_state.company_name = st.sidebar.text_input("Nombre de la empresa", value=st.session_state.company_name)
 st.session_state.logo_url = st.sidebar.text_input("URL del logo de la empresa", value=st.session_state.logo_url)
 st.session_state.primary_color = st.sidebar.color_picker("Selecciona un color principal", value=st.session_state.primary_color)
 
-# Dynamic month filter
 unique_months = sorted(st.session_state.campaign_data['month'].unique())
-# Initialize selected_months in session state if not present
 if 'selected_months' not in st.session_state:
     st.session_state.selected_months = unique_months
 selected_months = st.sidebar.multiselect(
@@ -61,7 +55,6 @@ selected_months = st.sidebar.multiselect(
     options=unique_months,
     default=st.session_state.selected_months
 )
-# Update selected months in session state for persistence
 st.session_state.selected_months = selected_months
 
 if not selected_months:
@@ -84,7 +77,6 @@ with st.sidebar.form(key='add_campaign_form'):
         else:
             st.error("El asunto de la campaña es obligatorio.")
 
-# Dynamic Header
 st.markdown(f"""
     <div style='text-align: center;'>
         <img src='{st.session_state.logo_url}' alt='Logo de la empresa' style='height: 100px; object-fit: contain; margin-bottom: 10px;'>
@@ -103,7 +95,6 @@ if not st.session_state.campaign_data.empty:
 
 st.markdown(f"<h3 style='text-align: center; color: {st.session_state.primary_color};'>{st.session_state.company_name} {date_range}</h3>", unsafe_allow_html=True)
 
-# KPI section
 st.header("Resumen del Período")
 kpi_cols = st.columns(4)
 
@@ -117,7 +108,6 @@ kpi_cols[1].metric("Emails Enviados", f"{total_enviados:,.0f}")
 kpi_cols[2].metric("Emails Aceptados", f"{total_aceptados:,.0f}")
 kpi_cols[3].metric("Tasa de Aceptación", f"{avg_tasa_aceptacion:.2f}%")
 
-# Chart section
 st.header("Análisis de Campañas")
 st.markdown("Este gráfico compara el volumen de correos aceptados frente a los omitidos para cada campaña.")
 if not filtered_df.empty:
@@ -125,9 +115,10 @@ if not filtered_df.empty:
 else:
     st.info("Agrega datos de una campaña para ver el gráfico.")
 
-# Detailed data table with edit/delete functionality
 st.subheader("Datos Detallados de Campañas")
 if not filtered_df.empty:
+    # Convert 'date' column to datetime objects before displaying
+    filtered_df['date'] = pd.to_datetime(filtered_df['date'])
     edited_df = st.data_editor(filtered_df, num_rows="dynamic", use_container_width=True, column_config={
         "date": st.column_config.DateColumn("Fecha"),
         "subject": st.column_config.TextColumn("Asunto"),
