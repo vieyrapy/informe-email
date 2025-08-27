@@ -1,7 +1,5 @@
 import streamlit as st
 import pandas as pd
-from fpdf import FPDF
-import io
 import datetime
 
 # Configuration of the page
@@ -116,79 +114,6 @@ st.bar_chart(filtered_df.set_index('subject')[['accepted', 'skipped']])
 # Detailed data table
 st.subheader("Datos Detallados de Campañas")
 st.dataframe(filtered_df[['subject', 'accepted', 'skipped', 'updatedOn']])
-
-# Function to create PDF
-def create_pdf(dataframe, observations, logo_url):
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Helvetica", size=16)
-
-    try:
-        pdf.image(logo_url, x=10, y=8, w=30)
-    except:
-        pass # Skip logo if URL is not accessible
-    
-    pdf.set_x(40)
-    
-    # Add Title and Subtitle
-    pdf.set_font("Helvetica", 'B', 16)
-    pdf.cell(0, 10, "Informe Interactivo de Email Marketing", ln=True, align='C')
-    pdf.set_font("Helvetica", '', 12)
-    pdf.cell(0, 10, "Fisiofitness Bilbao | Julio - Agosto 2025", ln=True, align='C')
-    pdf.ln(10)
-
-    # Add KPIs
-    pdf.set_font("Helvetica", 'B', 14)
-    pdf.cell(0, 10, "Resumen del Período", ln=True)
-    pdf.set_font("Helvetica", '', 12)
-    
-    kpi_text = [
-        f"Campañas Enviadas: {len(dataframe)}",
-        f"Emails Totales: {dataframe['total'].sum() if not dataframe.empty else 0:,.0f}",
-        f"Emails Aceptados: {dataframe['accepted'].sum() if not dataframe.empty else 0:,.0f}",
-        f"Tasa de Aceptación: {((dataframe['accepted'].sum() / dataframe['total'].sum()) * 100) if not dataframe.empty and dataframe['total'].sum() > 0 else 0:.2f}%"
-    ]
-    for text in kpi_text:
-        pdf.cell(0, 7, text, ln=True)
-    pdf.ln(5)
-    
-    # Add Data Table
-    pdf.set_font("Helvetica", 'B', 14)
-    pdf.cell(0, 10, "Datos Detallados de Campañas", ln=True)
-    pdf.set_font("Helvetica", '', 10)
-    
-    pdf.cell(60, 10, "Asunto", 1, 0, 'C')
-    pdf.cell(40, 10, "Aceptados", 1, 0, 'C')
-    pdf.cell(40, 10, "Saltados", 1, 0, 'C')
-    pdf.cell(50, 10, "Actualizado el", 1, 1, 'C')
-
-    for index, row in dataframe.iterrows():
-        pdf.cell(60, 10, str(row['subject'])[:30] + '...', 1, 0)
-        pdf.cell(40, 10, str(row['accepted']), 1, 0)
-        pdf.cell(40, 10, str(row['skipped']), 1, 0)
-        pdf.cell(50, 10, str(row['updatedOn']), 1, 1)
-    
-    pdf.ln(5)
-
-    # Add Observations
-    pdf.set_font("Helvetica", 'B', 14)
-    pdf.cell(0, 10, "Observaciones", ln=True)
-    pdf.set_font("Helvetica", '', 10)
-    pdf.multi_cell(0, 5, observations)
-    pdf.ln(5)
-
-    return pdf
-
-# Download button for PDF
-pdf = create_pdf(filtered_df, current_observations, logo_url)
-pdf_output = pdf.output(dest='S').encode('latin-1')
-
-st.download_button(
-    label="Descargar Informe en PDF",
-    data=pdf_output,
-    file_name=f"Informe_Fisiofitness_Bilbao_{month_filter}.pdf",
-    mime="application/pdf",
-)
 
 st.header("Observaciones")
 st.write(current_observations)
