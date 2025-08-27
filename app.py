@@ -39,6 +39,8 @@ def add_new_campaign(campaign_date, subject, aceptados, omitidos):
     st.session_state.campaign_data = pd.concat([st.session_state.campaign_data, pd.DataFrame([new_campaign])], ignore_index=True)
     if new_campaign['month'] not in st.session_state.observations:
         st.session_state.observations[new_campaign['month']] = ""
+    # Set the new month as the default selection to show the latest data
+    st.session_state.selected_months = [new_campaign['month']]
 
 # Main Dashboard
 st.sidebar.header("Opciones de Visualización")
@@ -51,11 +53,17 @@ st.session_state.primary_color = st.sidebar.color_picker("Selecciona un color pr
 
 # Dynamic month filter
 unique_months = sorted(st.session_state.campaign_data['month'].unique())
+# Initialize selected_months in session state if not present
+if 'selected_months' not in st.session_state:
+    st.session_state.selected_months = unique_months
 selected_months = st.sidebar.multiselect(
     "Selecciona el(los) mes(es):",
     options=unique_months,
-    default=unique_months
+    default=st.session_state.selected_months
 )
+# Update selected months in session state for persistence
+st.session_state.selected_months = selected_months
+
 if not selected_months:
     st.warning("Selecciona al menos un mes para ver los datos.")
     filtered_df = pd.DataFrame()
@@ -148,7 +156,7 @@ st.session_state.observations[' '.join(selected_months)] = st.session_state.obs_
 st.markdown("---")
 st.header("Conclusión y Recomendaciones")
 if not filtered_df.empty:
-    st.markdown("Las campañas de email marketing de {st.session_state.company_name} han tenido un rendimiento excepcional en términos de entrega. Los altos porcentajes de correos electrónicos aceptan que la lista de contactos está saludable y bien mantenida, con un mínimo de direcciones inexistentes o inaccesibles.")
+    st.markdown(f"Las campañas de email marketing de {st.session_state.company_name} han tenido un rendimiento excepcional en términos de entrega. Los altos porcentajes de correos electrónicos aceptados demuestran que la lista de contactos está saludable y bien mantenida, con un mínimo de direcciones inexistentes o inaccesibles.")
     st.markdown(f"""
     <p style="font-weight: 600; color: {st.session_state.primary_color};">Recomendaciones:</p>
     <ul style="list-style-type: disc; margin-left: 20px;">
