@@ -24,6 +24,7 @@ if 'primary_color' not in st.session_state:
 
 # Function to add new campaign data
 def add_new_campaign(campaign_date, subject, aceptados, omitidos):
+    # 'Enviados' is calculated by adding 'Aceptados' and 'Omitidos'
     enviados = aceptados + omitidos
     tasa_aceptacion = (aceptados / enviados) * 100 if enviados > 0 else 0
     new_campaign = {
