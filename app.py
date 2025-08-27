@@ -118,9 +118,12 @@ st.header("Análisis de Campañas")
 st.markdown("Este gráfico compara el volumen de correos aceptados frente a los saltados para cada campaña.")
 st.bar_chart(filtered_df.set_index('subject')[['accepted', 'skipped']])
 
-# Detailed data table
+# Detailed data table with edit/delete functionality
 st.subheader("Datos Detallados de Campañas")
-st.dataframe(filtered_df[['subject', 'accepted', 'skipped', 'updatedOn']])
+edited_df = st.data_editor(filtered_df, num_rows="dynamic", use_container_width=True)
+st.session_state.campaign_data = st.session_state.campaign_data[~st.session_state.campaign_data.index.isin(filtered_df.index)]
+st.session_state.campaign_data = pd.concat([st.session_state.campaign_data, edited_df], ignore_index=False)
+st.session_state.campaign_data.reset_index(drop=True, inplace=True)
 
 st.header("Observaciones")
 st.write(current_observations)
