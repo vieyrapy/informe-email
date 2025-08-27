@@ -23,17 +23,17 @@ if 'primary_color' not in st.session_state:
     st.session_state.primary_color = "#A58A73"
 
 # Function to add new campaign data
-def add_new_campaign(campaign_date, subject, accepted, skipped):
-    total_sent = accepted + skipped
-    accepted_rate = (accepted / total_sent) * 100 if total_sent > 0 else 0
+def add_new_campaign(campaign_date, subject, aceptados, omitidos):
+    enviados = aceptados + omitidos
+    tasa_aceptacion = (aceptados / enviados) * 100 if enviados > 0 else 0
     new_campaign = {
         'date': campaign_date.strftime('%Y-%m-%d'),
         'month': campaign_date.strftime('%B').lower(),
         'subject': subject,
-        'enviados': total_sent,
-        'aceptados': accepted,
-        'omitidos': skipped,
-        'tasa_aceptacion': round(accepted_rate, 2)
+        'enviados': enviados,
+        'aceptados': aceptados,
+        'omitidos': omitidos,
+        'tasa_aceptacion': round(tasa_aceptacion, 2)
     }
     st.session_state.campaign_data = pd.concat([st.session_state.campaign_data, pd.DataFrame([new_campaign])], ignore_index=True)
     if new_campaign['month'] not in st.session_state.observations:
@@ -63,14 +63,14 @@ else:
 
 st.sidebar.header("Agregar Nueva Campaña")
 with st.sidebar.form(key='add_campaign_form'):
-    new_date = st.date_input("Fecha de campaña", datetime.date.today())
+    new_date = st.date_input("Fecha", datetime.date.today())
     new_subject = st.text_input("Asunto")
-    new_accepted = st.number_input("Emails aceptados", min_value=0, step=1)
-    new_skipped = st.number_input("Emails omitidos", min_value=0, step=1)
+    new_aceptados = st.number_input("Aceptados", min_value=0, step=1)
+    new_omitidos = st.number_input("Omitidos", min_value=0, step=1)
     submit_button = st.form_submit_button("Agregar Campaña")
     if submit_button:
         if new_subject:
-            add_new_campaign(new_date, new_subject, new_accepted, new_skipped)
+            add_new_campaign(new_date, new_subject, new_aceptados, new_omitidos)
             st.success("Campaña agregada exitosamente!")
         else:
             st.error("El asunto de la campaña es obligatorio.")
@@ -99,14 +99,14 @@ st.header("Resumen del Período")
 kpi_cols = st.columns(4)
 
 total_campaigns = len(filtered_df)
-total_emails = filtered_df['enviados'].sum() if not filtered_df.empty else 0
-total_accepted = filtered_df['aceptados'].sum() if not filtered_df.empty else 0
-avg_acceptance_rate = (total_accepted / total_emails) * 100 if total_emails > 0 else 0
+total_enviados = filtered_df['enviados'].sum() if not filtered_df.empty else 0
+total_aceptados = filtered_df['aceptados'].sum() if not filtered_df.empty else 0
+avg_tasa_aceptacion = (total_aceptados / total_enviados) * 100 if total_enviados > 0 else 0
 
 kpi_cols[0].metric("Campañas Enviadas", total_campaigns)
-kpi_cols[1].metric("Emails Enviados", f"{total_emails:,.0f}")
-kpi_cols[2].metric("Emails Aceptados", f"{total_accepted:,.0f}")
-kpi_cols[3].metric("Tasa de Aceptación", f"{avg_acceptance_rate:.2f}%")
+kpi_cols[1].metric("Emails Enviados", f"{total_enviados:,.0f}")
+kpi_cols[2].metric("Emails Aceptados", f"{total_aceptados:,.0f}")
+kpi_cols[3].metric("Tasa de Aceptación", f"{avg_tasa_aceptacion:.2f}%")
 
 # Chart section
 st.header("Análisis de Campañas")
@@ -119,7 +119,14 @@ else:
 # Detailed data table with edit/delete functionality
 st.subheader("Datos Detallados de Campañas")
 if not filtered_df.empty:
-    edited_df = st.data_editor(filtered_df, num_rows="dynamic", use_container_width=True)
+    edited_df = st.data_editor(filtered_df, num_rows="dynamic", use_container_width=True, column_config={
+        "date": st.column_config.DateColumn("Fecha"),
+        "subject": st.column_config.TextColumn("Asunto"),
+        "enviados": st.column_config.NumberColumn("Enviados"),
+        "aceptados": st.column_config.NumberColumn("Aceptados"),
+        "omitidos": st.column_config.NumberColumn("Omitidos"),
+        "tasa_aceptacion": st.column_config.NumberColumn("Tasa de Aceptación")
+    })
     st.session_state.campaign_data = st.session_state.campaign_data[~st.session_state.campaign_data.index.isin(filtered_df.index)]
     st.session_state.campaign_data = pd.concat([st.session_state.campaign_data, edited_df], ignore_index=False)
     st.session_state.campaign_data.reset_index(drop=True, inplace=True)
