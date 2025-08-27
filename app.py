@@ -12,7 +12,7 @@ st.set_page_config(
 # Data Initialization
 if 'campaign_data' not in st.session_state:
     st.session_state.campaign_data = pd.DataFrame(
-        columns=['date', 'month', 'subject', 'total_emails', 'accepted', 'skipped', 'accepted_rate']
+        columns=['date', 'month', 'subject', 'enviados', 'aceptados', 'omitidos', 'tasa_aceptacion']
     )
     st.session_state.observations = {}
 if 'company_name' not in st.session_state:
@@ -24,16 +24,16 @@ if 'primary_color' not in st.session_state:
 
 # Function to add new campaign data
 def add_new_campaign(campaign_date, subject, accepted, skipped):
-    total = accepted + skipped
-    accepted_rate = (accepted / total) * 100 if total > 0 else 0
+    total_sent = accepted + skipped
+    accepted_rate = (accepted / total_sent) * 100 if total_sent > 0 else 0
     new_campaign = {
         'date': campaign_date.strftime('%Y-%m-%d'),
         'month': campaign_date.strftime('%B').lower(),
         'subject': subject,
-        'total_emails': total,
-        'accepted': accepted,
-        'skipped': skipped,
-        'accepted_rate': round(accepted_rate, 2)
+        'enviados': total_sent,
+        'aceptados': accepted,
+        'omitidos': skipped,
+        'tasa_aceptacion': round(accepted_rate, 2)
     }
     st.session_state.campaign_data = pd.concat([st.session_state.campaign_data, pd.DataFrame([new_campaign])], ignore_index=True)
     if new_campaign['month'] not in st.session_state.observations:
@@ -65,8 +65,8 @@ st.sidebar.header("Agregar Nueva Campaña")
 with st.sidebar.form(key='add_campaign_form'):
     new_date = st.date_input("Fecha de campaña", datetime.date.today())
     new_subject = st.text_input("Asunto")
-    new_accepted = st.number_input("Emails recibidos", min_value=0, step=1)
-    new_skipped = st.number_input("Emails saltados", min_value=0, step=1)
+    new_accepted = st.number_input("Emails aceptados", min_value=0, step=1)
+    new_skipped = st.number_input("Emails omitidos", min_value=0, step=1)
     submit_button = st.form_submit_button("Agregar Campaña")
     if submit_button:
         if new_subject:
@@ -99,20 +99,20 @@ st.header("Resumen del Período")
 kpi_cols = st.columns(4)
 
 total_campaigns = len(filtered_df)
-total_emails = filtered_df['total_emails'].sum() if not filtered_df.empty else 0
-total_accepted = filtered_df['accepted'].sum() if not filtered_df.empty else 0
+total_emails = filtered_df['enviados'].sum() if not filtered_df.empty else 0
+total_accepted = filtered_df['aceptados'].sum() if not filtered_df.empty else 0
 avg_acceptance_rate = (total_accepted / total_emails) * 100 if total_emails > 0 else 0
 
 kpi_cols[0].metric("Campañas Enviadas", total_campaigns)
-kpi_cols[1].metric("Emails Totales", f"{total_emails:,.0f}")
+kpi_cols[1].metric("Emails Enviados", f"{total_emails:,.0f}")
 kpi_cols[2].metric("Emails Aceptados", f"{total_accepted:,.0f}")
 kpi_cols[3].metric("Tasa de Aceptación", f"{avg_acceptance_rate:.2f}%")
 
 # Chart section
 st.header("Análisis de Campañas")
-st.markdown("Este gráfico compara el volumen de correos aceptados frente a los saltados para cada campaña.")
+st.markdown("Este gráfico compara el volumen de correos aceptados frente a los omitidos para cada campaña.")
 if not filtered_df.empty:
-    st.bar_chart(filtered_df.set_index('subject')[['accepted', 'skipped']])
+    st.bar_chart(filtered_df.set_index('subject')[['aceptados', 'omitidos']])
 else:
     st.info("Agrega datos de una campaña para ver el gráfico.")
 
