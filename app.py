@@ -12,7 +12,7 @@ st.set_page_config(
 # Data Initialization
 if 'campaign_data' not in st.session_state:
     st.session_state.campaign_data = pd.DataFrame(
-        columns=['month', 'date', 'updatedOn', 'subject', 'total', 'accepted', 'skipped', 'accepted_rate']
+        columns=['date', 'month', 'subject', 'total_emails', 'accepted', 'skipped', 'accepted_rate']
     )
     st.session_state.observations = {}
 if 'company_name' not in st.session_state:
@@ -23,15 +23,14 @@ if 'primary_color' not in st.session_state:
     st.session_state.primary_color = "#A58A73"
 
 # Function to add new campaign data
-def add_new_campaign(subject, accepted, skipped):
+def add_new_campaign(campaign_date, subject, accepted, skipped):
     total = accepted + skipped
     accepted_rate = (accepted / total) * 100 if total > 0 else 0
     new_campaign = {
-        'month': datetime.datetime.now().strftime('%B').lower(),
-        'date': datetime.datetime.now().strftime('%d-%m-%Y'),
-        'updatedOn': datetime.datetime.now().strftime('%b %d, %Y %I:%M %p'),
+        'date': campaign_date.strftime('%Y-%m-%d'),
+        'month': campaign_date.strftime('%B').lower(),
         'subject': subject,
-        'total': total,
+        'total_emails': total,
         'accepted': accepted,
         'skipped': skipped,
         'accepted_rate': round(accepted_rate, 2)
@@ -64,13 +63,14 @@ else:
 
 st.sidebar.header("Agregar Nueva Campaña")
 with st.sidebar.form(key='add_campaign_form'):
-    new_subject = st.text_input("Asunto de la campaña")
-    new_accepted = st.number_input("Emails Aceptados", min_value=0, step=1)
-    new_skipped = st.number_input("Emails Saltados", min_value=0, step=1)
+    new_date = st.date_input("Fecha de campaña", datetime.date.today())
+    new_subject = st.text_input("Asunto")
+    new_accepted = st.number_input("Emails recibidos", min_value=0, step=1)
+    new_skipped = st.number_input("Emails saltados", min_value=0, step=1)
     submit_button = st.form_submit_button("Agregar Campaña")
     if submit_button:
         if new_subject:
-            add_new_campaign(new_subject, new_accepted, new_skipped)
+            add_new_campaign(new_date, new_subject, new_accepted, new_skipped)
             st.success("Campaña agregada exitosamente!")
         else:
             st.error("El asunto de la campaña es obligatorio.")
@@ -86,10 +86,11 @@ date_range = ""
 if not st.session_state.campaign_data.empty:
     first_month = st.session_state.campaign_data['month'].iloc[0].capitalize()
     last_month = st.session_state.campaign_data['month'].iloc[-1].capitalize()
+    year = datetime.datetime.now().year
     if first_month == last_month:
-        date_range = f"| {first_month} {datetime.datetime.now().year}"
+        date_range = f"| {first_month} {year}"
     else:
-        date_range = f"| {first_month} - {last_month} {datetime.datetime.now().year}"
+        date_range = f"| {first_month} - {last_month} {year}"
 
 st.markdown(f"<h3 style='text-align: center; color: {st.session_state.primary_color};'>{st.session_state.company_name} {date_range}</h3>", unsafe_allow_html=True)
 
@@ -98,7 +99,7 @@ st.header("Resumen del Período")
 kpi_cols = st.columns(4)
 
 total_campaigns = len(filtered_df)
-total_emails = filtered_df['total'].sum() if not filtered_df.empty else 0
+total_emails = filtered_df['total_emails'].sum() if not filtered_df.empty else 0
 total_accepted = filtered_df['accepted'].sum() if not filtered_df.empty else 0
 avg_acceptance_rate = (total_accepted / total_emails) * 100 if total_emails > 0 else 0
 
