@@ -39,7 +39,14 @@ Las campañas de agosto mostraron una alta tasa de aceptación, lo que confirma 
 Las tasas de "saltados" se mantuvieron en niveles bajos y controlados.""",
         'ambos': """El rendimiento general en ambos meses ha sido excepcional. Los altos porcentajes de correos aceptados demuestran que la lista de contactos está saludable y bien mantenida.
 
-Las tasas de "saltados" se mantuvieron en niveles bajos y controlados durante todo el período."""
+Las tasas de "saltados" se mantuvieron en niveles bajos y controlados durante todo el período.
+
+---
+
+Recomendaciones:
+- Continuar con la segmentación de la audiencia para personalizar aún más el contenido.
+- Analizar las métricas de apertura y clics para entender qué tipos de contenido generan mayor interacción.
+- Mantener limpia lista de contactos para asegurar altas tasas de entrega a futuro."""
     }
 
 # Function to add new campaign data
@@ -121,11 +128,3 @@ st.write(current_observations)
 st.markdown("---")
 st.header("Conclusión y Recomendaciones")
 st.markdown("Las campañas de email marketing de Fisiofitness Bilbao durante julio y agosto han tenido un rendimiento excepcional en términos de entrega. Los altos porcentajes de correos electrónicos aceptados demuestran que la lista de contactos está saludable y bien mantenida, con un mínimo de direcciones inexistentes o inaccesibles.")
-st.markdown("""
-<p class="font-semibold" style="color: #A58A73;">Recomendaciones:</p>
-<ul style="list-style-type: disc; margin-left: 20px;">
-    <li>Continuar con la segmentación de la audiencia para personalizar aún más el contenido.</li>
-    <li>Analizar las métricas de apertura y clics para entender qué tipos de contenido generan mayor interacción.</li>
-    <li>Mantener limpia lista de contactos para asegurar altas tasas de entrega a futuro.</li>
-</ul>
-""", unsafe_allow_html=True)
