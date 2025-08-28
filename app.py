@@ -101,21 +101,7 @@ if not st.session_state.campaign_data.empty:
 
 st.markdown(f"<h3 style='text-align: center; color: {st.session_state.primary_color};'>{st.session_state.company_name} {date_range}</h3>", unsafe_allow_html=True)
 
-# Function to trigger browser print
-st.button("Descargar PDF (Usar la opción de imprimir del navegador)")
-st.markdown(
-    """
-    <script>
-    const printButton = document.querySelector('button[kind="secondary"][aria-label="Descargar PDF (Usar la opción de imprimir del navegador)"]');
-    if (printButton) {
-        printButton.onclick = () => {
-            window.print();
-        };
-    }
-    </script>
-    """,
-    unsafe_allow_html=True
-)
+
 
 
 # Filtering data based on selection
@@ -191,3 +177,4 @@ st.text_area(
     on_change=lambda: st.session_state.update({'conclusions': st.session_state.conclusions_textarea})
 )
 st.session_state.conclusions = st.session_state.conclusions_textarea
+
