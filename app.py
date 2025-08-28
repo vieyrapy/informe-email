@@ -41,6 +41,7 @@ def add_new_campaign(campaign_date, subject, aceptados, omitidos):
     if new_campaign['month'] not in st.session_state.observations:
         st.session_state.observations[new_campaign['month']] = ""
     st.session_state.selected_months = [new_campaign['month']]
+    st.experimental_rerun()
 
 # Main Dashboard
 st.sidebar.header("Opciones de Visualización")
@@ -99,72 +100,70 @@ if not st.session_state.campaign_data.empty:
 
 st.markdown(f"<h3 style='text-align: center; color: {st.session_state.primary_color};'>{st.session_state.company_name} {date_range}</h3>", unsafe_allow_html=True)
 
-# Main content container for PDF generation
-with st.container():
-    st.header("Resumen del Período")
-    kpi_cols = st.columns(4)
-    
-    # Filter data based on selection
-    if not selected_months:
-        st.warning("Selecciona al menos un mes para ver los datos.")
-        filtered_df = pd.DataFrame()
-    else:
-        filtered_df = st.session_state.campaign_data[st.session_state.campaign_data['month'].isin(selected_months)]
+# Main content for PDF
+st.markdown("<div id='report-content'>", unsafe_allow_html=True)
+st.header("Resumen del Período")
+kpi_cols = st.columns(4)
 
-    total_campaigns = len(filtered_df)
-    total_enviados = filtered_df['enviados'].sum() if not filtered_df.empty else 0
-    total_aceptados = filtered_df['aceptados'].sum() if not filtered_df.empty else 0
-    avg_tasa_aceptacion = (total_aceptados / total_enviados) * 100 if total_enviados > 0 else 0
-    
-    kpi_cols[0].metric("Campañas Enviadas", total_campaigns)
-    kpi_cols[1].metric("Emails Enviados", f"{total_enviados:,.0f}")
-    kpi_cols[2].metric("Emails Aceptados", f"{total_aceptados:,.0f}")
-    kpi_cols[3].metric("Tasa de Aceptación", f"{avg_tasa_aceptacion:.2f}%")
+if not selected_months:
+    st.warning("Selecciona al menos un mes para ver los datos.")
+    filtered_df = pd.DataFrame()
+else:
+    filtered_df = st.session_state.campaign_data[st.session_state.campaign_data['month'].isin(selected_months)]
 
-    st.header("Análisis de Campañas")
-    st.markdown("Este gráfico compara el volumen de correos aceptados frente a los omitidos para cada campaña.")
-    if not filtered_df.empty:
-        st.bar_chart(filtered_df.set_index('subject')[['aceptados', 'omitidos']])
-    else:
-        st.info("Agrega datos de una campaña para ver el gráfico.")
-    
-    st.subheader("Datos Detallados de Campañas")
-    if not filtered_df.empty:
-        filtered_df['date'] = pd.to_datetime(filtered_df['date'])
-        edited_df = st.data_editor(filtered_df, num_rows="dynamic", use_container_width=True, column_config={
-            "date": st.column_config.DateColumn("Fecha"),
-            "subject": st.column_config.TextColumn("Asunto"),
-            "enviados": st.column_config.NumberColumn("Enviados"),
-            "aceptados": st.column_config.NumberColumn("Aceptados"),
-            "omitidos": st.column_config.NumberColumn("Omitidos"),
-            "tasa_aceptacion": st.column_config.NumberColumn("Tasa de Aceptación")
-        })
-        st.session_state.campaign_data = st.session_state.campaign_data[~st.session_state.campaign_data.index.isin(filtered_df.index)]
-        st.session_state.campaign_data = pd.concat([st.session_state.campaign_data, edited_df], ignore_index=False)
-        st.session_state.campaign_data.reset_index(drop=True, inplace=True)
-    else:
-        st.info("No hay campañas para mostrar. Utiliza la barra lateral para agregar una nueva.")
+total_campaigns = len(filtered_df)
+total_enviados = filtered_df['enviados'].sum() if not filtered_df.empty else 0
+total_aceptados = filtered_df['aceptados'].sum() if not filtered_df.empty else 0
+avg_tasa_aceptacion = (total_aceptados / total_enviados) * 100 if total_enviados > 0 else 0
 
-    st.header("Observaciones")
-    current_observations_value = st.session_state.observations.get(' '.join(selected_months), "")
-    st.text_area(
-        "Escribe aquí las observaciones para el reporte actual:",
-        value=current_observations_value,
-        height=200,
-        key="obs_textarea",
-        on_change=lambda: st.session_state.observations.update({' '.join(selected_months): st.session_state.obs_textarea})
-    )
-    st.session_state.observations[' '.join(selected_months)] = st.session_state.obs_textarea
+kpi_cols[0].metric("Campañas Enviadas", total_campaigns)
+kpi_cols[1].metric("Emails Enviados", f"{total_enviados:,.0f}")
+kpi_cols[2].metric("Emails Aceptados", f"{total_aceptados:,.0f}")
+kpi_cols[3].metric("Tasa de Aceptación", f"{avg_tasa_aceptacion:.2f}%")
 
-    st.markdown("---")
-    st.header("Conclusión y Recomendaciones")
-    if "conclusions_textarea" not in st.session_state:
-        st.session_state.conclusions_textarea = ""
-    st.text_area(
-        "Escribe aquí la conclusión y las recomendaciones:",
-        value=st.session_state.conclusions_textarea,
-        height=200,
-        key="conclusions_textarea",
-        on_change=lambda: st.session_state.update({'conclusions': st.session_state.conclusions_textarea})
-    )
-    st.session_state.conclusions = st.session_state.conclusions_textarea
+st.header("Análisis de Campañas")
+st.markdown("Este gráfico compara el volumen de correos aceptados frente a los omitidos para cada campaña.")
+if not filtered_df.empty:
+    st.bar_chart(filtered_df.set_index('subject')[['aceptados', 'omitidos']])
+else:
+    st.info("Agrega datos de una campaña para ver el gráfico.")
+
+st.subheader("Datos Detallados de Campañas")
+if not filtered_df.empty:
+    filtered_df['date'] = pd.to_datetime(filtered_df['date'])
+    edited_df = st.data_editor(filtered_df, num_rows="dynamic", use_container_width=True, column_config={
+        "date": st.column_config.DateColumn("Fecha"),
+        "subject": st.column_config.TextColumn("Asunto"),
+        "enviados": st.column_config.NumberColumn("Enviados"),
+        "aceptados": st.column_config.NumberColumn("Aceptados"),
+        "omitidos": st.column_config.NumberColumn("Omitidos"),
+        "tasa_aceptacion": st.column_config.NumberColumn("Tasa de Aceptación")
+    })
+    st.session_state.campaign_data = edited_df.reset_index(drop=True)
+else:
+    st.info("No hay campañas para mostrar. Utiliza la barra lateral para agregar una nueva.")
+
+st.header("Observaciones")
+current_observations_value = st.session_state.observations.get(' '.join(selected_months), "")
+st.text_area(
+    "Escribe aquí las observaciones para el reporte actual:",
+    value=current_observations_value,
+    height=200,
+    key="obs_textarea",
+    on_change=lambda: st.session_state.observations.update({' '.join(selected_months): st.session_state.obs_textarea})
+)
+st.session_state.observations[' '.join(selected_months)] = st.session_state.obs_textarea
+
+st.header("Conclusión y Recomendaciones")
+if "conclusions_textarea" not in st.session_state:
+    st.session_state.conclusions_textarea = ""
+st.text_area(
+    "Escribe aquí la conclusión y las recomendaciones:",
+    value=st.session_state.conclusions_textarea,
+    height=200,
+    key="conclusions_textarea",
+    on_change=lambda: st.session_state.update({'conclusions': st.session_state.conclusions_textarea})
+)
+st.session_state.conclusions = st.session_state.conclusions_textarea
+
+st.markdown("</div>", unsafe_allow_html=True)
