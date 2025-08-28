@@ -26,7 +26,6 @@ if 'primary_color' not in st.session_state:
 
 # Function to add new campaign data
 def add_new_campaign(campaign_date, subject, aceptados, omitidos):
-    # 'Enviados' is calculated by adding 'Aceptados' and 'Omitidos'
     enviados = aceptados + omitidos
     tasa_aceptacion = (aceptados / enviados) * 100 if enviados > 0 else 0
     new_campaign = {
@@ -43,6 +42,7 @@ def add_new_campaign(campaign_date, subject, aceptados, omitidos):
         st.session_state.observations[new_campaign['month']] = ""
     # Set the new month as the default selection to show the latest data
     st.session_state.selected_months = [new_campaign['month']]
+    st.rerun()
 
 # Main Dashboard
 st.sidebar.header("Opciones de Visualización")
@@ -89,10 +89,10 @@ date_range = ""
 if not st.session_state.campaign_data.empty:
     filtered_data_for_title = st.session_state.campaign_data[st.session_state.campaign_data['month'].isin(selected_months)]
     if not filtered_data_for_title.empty:
-        # Sort by date to get the first and last month correctly
+        filtered_data_for_title['date'] = pd.to_datetime(filtered_data_for_title['date'])
         filtered_data_for_title = filtered_data_for_title.sort_values(by='date')
-        first_month_name = datetime.datetime.strptime(filtered_data_for_title['month'].iloc[0], "%B").strftime("%B").capitalize()
-        last_month_name = datetime.datetime.strptime(filtered_data_for_title['month'].iloc[-1], "%B").strftime("%B").capitalize()
+        first_month_name = filtered_data_for_title['month'].iloc[0].capitalize()
+        last_month_name = filtered_data_for_title['month'].iloc[-1].capitalize()
         year = datetime.datetime.now().year
         if first_month_name == last_month_name:
             date_range = f"| {first_month_name} {year}"
@@ -100,6 +100,23 @@ if not st.session_state.campaign_data.empty:
             date_range = f"| {first_month_name} - {last_month_name} {year}"
 
 st.markdown(f"<h3 style='text-align: center; color: {st.session_state.primary_color};'>{st.session_state.company_name} {date_range}</h3>", unsafe_allow_html=True)
+
+# Function to trigger browser print
+st.button("Descargar PDF (Usar la opción de imprimir del navegador)")
+st.markdown(
+    """
+    <script>
+    const printButton = document.querySelector('button[kind="secondary"][aria-label="Descargar PDF (Usar la opción de imprimir del navegador)"]');
+    if (printButton) {
+        printButton.onclick = () => {
+            window.print();
+        };
+    }
+    </script>
+    """,
+    unsafe_allow_html=True
+)
+
 
 # Filtering data based on selection
 if not selected_months:
@@ -164,10 +181,11 @@ st.session_state.observations[' '.join(selected_months)] = st.session_state.obs_
 
 # Conclusión and Recomendaciones section is now fully dynamic and editable
 st.header("Conclusión y Recomendaciones")
-current_conclusions_value = st.session_state.conclusions
+if "conclusions_textarea" not in st.session_state:
+    st.session_state.conclusions_textarea = ""
 st.text_area(
     "Escribe aquí la conclusión y las recomendaciones:",
-    value=current_conclusions_value,
+    value=st.session_state.conclusions_textarea,
     height=200,
     key="conclusions_textarea",
     on_change=lambda: st.session_state.update({'conclusions': st.session_state.conclusions_textarea})
