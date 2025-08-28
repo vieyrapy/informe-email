@@ -41,7 +41,7 @@ def add_new_campaign(campaign_date, subject, aceptados, omitidos):
     if new_campaign['month'] not in st.session_state.observations:
         st.session_state.observations[new_campaign['month']] = ""
     st.session_state.selected_months = [new_campaign['month']]
-    st.experimental_rerun()
+    st.rerun()
 
 # Main Dashboard
 st.sidebar.header("Opciones de Visualización")
